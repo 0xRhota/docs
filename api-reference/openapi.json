@@ -1,216 +1,270 @@
 {
-  "openapi": "3.1.0",
+  "openapi": "3.0.0",
   "info": {
-    "title": "OpenAPI Plant Store",
-    "description": "A sample API that uses a plant store as an example to demonstrate features in the OpenAPI specification",
-    "license": {
-      "name": "MIT"
-    },
-    "version": "1.0.0"
+    "title": "Cambrian API",
+    "version": "1.0.0",
+    "description": "API for accessing DeFi protocol data across multiple chains"
   },
   "servers": [
     {
-      "url": "http://sandbox.mintlify.com"
+      "url": "https://opabinia.cambrian.org/api/v1",
+      "description": "Production server"
     }
   ],
   "security": [
     {
-      "bearerAuth": []
+      "ApiKeyAuth": []
     }
   ],
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "All API requests require an API key passed in the x-api-key header. Example: curl -H \"x-api-key: YOUR_API_KEY\" \"https://opabinia.cambrian.org/api/v1/...\""
+      }
+    }
+  },
   "paths": {
-    "/plants": {
+    "/chains": {
       "get": {
-        "description": "Returns all plants from the system that the user has access to",
+        "summary": "List supported chains",
+        "description": "Returns information about supported blockchain networks",
+        "operationId": "listChains",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "example": [
+                  {
+                    "columns": [
+                      {
+                        "name": "id",
+                        "type": "UInt32"
+                      },
+                      {
+                        "name": "name",
+                        "type": "String"
+                      }
+                    ],
+                    "data": [
+                      [900, "solana"],
+                      [8453, "base"]
+                    ],
+                    "rows": 2
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/price_hour": {
+      "get": {
+        "summary": "Get hourly USD price of a token",
+        "description": "Returns historical hourly price data for a specified token. Limitations: Maximum 1000 hours of historical data, timestamps are in UTC format. Use /tokens endpoint to get list of valid token symbols.",
+        "operationId": "getTokenPrice",
         "parameters": [
+          {
+            "name": "symbol",
+            "in": "query",
+            "description": "Token symbol. See /tokens endpoint for valid symbols",
+            "required": true,
+            "example": "PEPE",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 10
+            }
+          },
           {
             "name": "limit",
             "in": "query",
-            "description": "The maximum number of results to return",
+            "description": "Maximum number of hours to return",
+            "required": true,
+            "example": 100,
             "schema": {
               "type": "integer",
-              "format": "int32"
+              "minimum": 1,
+              "maximum": 1000
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "Plant response",
+            "description": "Successful response",
             "content": {
               "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Plant"
+                "example": [
+                  {
+                    "columns": [
+                      {
+                        "name": "chain_id",
+                        "type": "UInt32"
+                      },
+                      {
+                        "name": "block_hour",
+                        "type": "DateTime('UTC')"
+                      },
+                      {
+                        "name": "address",
+                        "type": "String"
+                      },
+                      {
+                        "name": "symbol",
+                        "type": "String"
+                      },
+                      {
+                        "name": "price",
+                        "type": "Float64"
+                      }
+                    ],
+                    "data": [
+                      [
+                        8453,
+                        "2025-04-11T19:00:00+00:00",
+                        "0x52b492a33e447cdb854c7fc19f1e57e8bfa1777d",
+                        "PEPE",
+                        3.544197183112785e-08
+                      ]
+                    ],
+                    "rows": 1
                   }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Unexpected error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "description": "Creates a new plant in the store",
-        "requestBody": {
-          "description": "Plant to add to the store",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/NewPlant"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "plant response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Plant"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "unexpected error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
+                ]
               }
             }
           }
         }
       }
     },
-    "/plants/{id}": {
-      "delete": {
-        "description": "Deletes a single plant based on the ID supplied",
+    "/solana/tokens": {
+      "get": {
+        "summary": "List Solana Tokens",
+        "description": "Returns a paginated list of known tokens for the Solana chain. Limitations: Maximum 100 tokens per request, pagination required for full token list. Results include program ID (mint address), symbol, name, and decimal places. Use offset parameter for pagination through the complete token list.",
+        "operationId": "listSolanaTokens",
         "parameters": [
           {
-            "name": "id",
-            "in": "path",
-            "description": "ID of plant to delete",
+            "name": "offset",
+            "in": "query",
+            "description": "Number of items to skip (offset). Use with limit parameter for pagination through large result sets.",
             "required": true,
+            "example": 0,
             "schema": {
               "type": "integer",
-              "format": "int64"
+              "minimum": 0
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of results per page. Maximum value is 100. Use with offset for pagination.",
+            "required": true,
+            "example": 100,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
             }
           }
         ],
-        "responses": {
-          "204": {
-            "description": "Plant deleted",
-            "content": {}
-          },
-          "400": {
-            "description": "unexpected error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  },
-  "webhooks": {
-    "/plant/webhook": {
-      "post": {
-        "description": "Information about a new plant added to the store",
-        "requestBody": {
-          "description": "Plant added to the store",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/NewPlant"
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
-            "description": "Return a 200 status to indicate that the data was received successfully"
-          }
-        }
-      }
-    }
-  },
-  "components": {
-    "schemas": {
-      "Plant": {
-        "required": [
-          "name"
-        ],
-        "type": "object",
-        "properties": {
-          "name": {
-            "description": "The name of the plant",
-            "type": "string"
-          },
-          "tag": {
-            "description": "Tag to specify the type",
-            "type": "string"
-          }
-        }
-      },
-      "NewPlant": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/Plant"
-          },
-          {
-            "required": [
-              "id"
-            ],
-            "type": "object",
-            "properties": {
-              "id": {
-                "description": "Identification number of the plant",
-                "type": "integer",
-                "format": "int64"
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "example": [
+                  {
+                    "columns": [
+                      {
+                        "name": "program_id",
+                        "type": "String"
+                      },
+                      {
+                        "name": "symbol",
+                        "type": "String"
+                      },
+                      {
+                        "name": "name",
+                        "type": "String"
+                      },
+                      {
+                        "name": "decimals",
+                        "type": "UInt8"
+                      }
+                    ],
+                    "data": [
+                      [
+                        "12mcpYL84oMi8Hiinyjuv2Zq3F47tLLxjw1THLcAdKT2",
+                        "ched",
+                        "giggleched",
+                        6
+                      ]
+                    ],
+                    "rows": 100
+                  }
+                ]
               }
             }
-          }
-        ]
-      },
-      "Error": {
-        "required": [
-          "error",
-          "message"
-        ],
-        "type": "object",
-        "properties": {
-          "error": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "message": {
-            "type": "string"
           }
         }
       }
     },
-    "securitySchemes": {
-      "bearerAuth": {
-        "type": "http",
-        "scheme": "bearer"
+    "/solana/tokens/{programId}/holders": {
+      "get": {
+        "summary": "List Latest Solana Token Holders by Program ID",
+        "description": "Returns a list of current token holders for a specific Solana token program ID.",
+        "operationId": "listLatestSolanaTokenHolders",
+        "parameters": [
+          {
+            "name": "programId",
+            "in": "path",
+            "description": "Token program ID (mint address)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "example": [
+                  {
+                    "columns": [
+                      {
+                        "name": "account",
+                        "type": "FixedString(44)"
+                      },
+                      {
+                        "name": "balance_raw",
+                        "type": "UInt64"
+                      },
+                      {
+                        "name": "balance_ui",
+                        "type": "Float64"
+                      }
+                    ],
+                    "data": [
+                      [
+                        "12mcpYL84oMi8Hiinyjuv2Zq3F47tLLxjw1THLcAdKT2",
+                        1000000000000000000,
+                        1.0
+                      ]
+                    ],
+                    "rows": 1
+                  }
+                ]
+              }
+            }
+          }
+        }
       }
     }
   }

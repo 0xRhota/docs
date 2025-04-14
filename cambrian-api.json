@@ -1,0 +1,659 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Cambrian API",
+        "version": "1.0.0",
+        "description": "API for accessing DeFi protocol data across multiple chains"
+    },
+    "servers": [
+        {
+            "url": "https://opabinia.cambrian.org/api/v1",
+            "description": "Production server"
+        }
+    ],
+    "security": [
+        {
+            "ApiKeyAuth": []
+        }
+    ],
+    "components": {
+        "securitySchemes": {
+            "ApiKeyAuth": {
+                "type": "apiKey",
+                "in": "header",
+                "name": "x-api-key",
+                "description": "All API requests require an API key passed in the x-api-key header. Example: curl -H \"x-api-key: YOUR_API_KEY\" \"https://opabinia.cambrian.org/api/v1/...\""
+            }
+        }
+    },
+    "paths": {
+        "/chains": {
+            "get": {
+                "summary": "List supported chains",
+                "description": "Returns information about supported blockchain networks",
+                "operationId": "listChains",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "example": [
+                                    {
+                                        "columns": [
+                                            {
+                                                "name": "id",
+                                                "type": "UInt32"
+                                            },
+                                            {
+                                                "name": "name",
+                                                "type": "String"
+                                            }
+                                        ],
+                                        "data": [
+                                            [900, "solana"],
+                                            [8453, "base"]
+                                        ],
+                                        "rows": 2
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/price_hour": {
+            "get": {
+                "summary": "Get hourly USD price of a token",
+                "description": "Returns historical hourly price data for a specified token. Limitations: Maximum 1000 hours of historical data, timestamps are in UTC format. Use /tokens endpoint to get list of valid token symbols.",
+                "operationId": "getTokenPrice",
+                "parameters": [
+                    {
+                        "name": "symbol",
+                        "in": "query",
+                        "description": "Token symbol. See /tokens endpoint for valid symbols",
+                        "required": true,
+                        "example": "PEPE",
+                        "schema": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 10
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Maximum number of hours to return",
+                        "required": true,
+                        "example": 100,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 1000
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "example": [
+                                    {
+                                        "columns": [
+                                            {
+                                                "name": "chain_id",
+                                                "type": "UInt32"
+                                            },
+                                            {
+                                                "name": "block_hour",
+                                                "type": "DateTime('UTC')"
+                                            },
+                                            {
+                                                "name": "address",
+                                                "type": "String"
+                                            },
+                                            {
+                                                "name": "symbol",
+                                                "type": "String"
+                                            },
+                                            {
+                                                "name": "price",
+                                                "type": "Float64"
+                                            }
+                                        ],
+                                        "data": [
+                                            [
+                                                8453,
+                                                "2025-04-11T19:00:00+00:00",
+                                                "0x52b492a33e447cdb854c7fc19f1e57e8bfa1777d",
+                                                "PEPE",
+                                                3.544197183112785e-08
+                                            ]
+                                        ],
+                                        "rows": 1
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/solana/tokens": {
+            "get": {
+                "summary": "List Solana Tokens",
+                "description": "Returns a paginated list of known tokens for the Solana chain. Limitations: Maximum 100 tokens per request, pagination required for full token list. Results include program ID (mint address), symbol, name, and decimal places. Use offset parameter for pagination through the complete token list.",
+                "operationId": "listSolanaTokens",
+                "parameters": [
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "description": "Number of items to skip (offset). Use with limit parameter for pagination through large result sets.",
+                        "required": true,
+                        "example": 0,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 0
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Number of results per page. Maximum value is 100. Use with offset for pagination.",
+                        "required": true,
+                        "example": 100,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "example": [
+                                    {
+                                        "columns": [
+                                            {
+                                                "name": "program_id",
+                                                "type": "String"
+                                            },
+                                            {
+                                                "name": "symbol",
+                                                "type": "String"
+                                            },
+                                            {
+                                                "name": "name",
+                                                "type": "String"
+                                            },
+                                            {
+                                                "name": "decimals",
+                                                "type": "UInt8"
+                                            }
+                                        ],
+                                        "data": [
+                                            [
+                                                "12mcpYL84oMi8Hiinyjuv2Zq3F47tLLxjw1THLcAdKT2",
+                                                "ched",
+                                                "giggleched",
+                                                6
+                                            ]
+                                        ],
+                                        "rows": 100
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/solana/tokens/{programId}/holders": {
+            "get": {
+                "summary": "List Latest Solana Token Holders by Program ID",
+                "description": "Returns a list of current token holders for a specific Solana token program ID.",
+                "operationId": "listLatestSolanaTokenHolders",
+                "parameters": [
+                    {
+                        "name": "programId",
+                        "in": "path",
+                        "description": "Token program ID (mint address)",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "example": [
+                                    {
+                                        "columns": [
+                                            {
+                                                "name": "account",
+                                                "type": "FixedString(44)"
+                                            },
+                                            {
+                                                "name": "balance_raw",
+                                                "type": "UInt64"
+                                            },
+                                            {
+                                                "name": "balance_ui",
+                                                "type": "Float64"
+                                            }
+                                        ],
+                                        "data": [
+                                            [
+                                                "FGETo8T8wMcN2wCjav8VK6eh3dLk63evNDPxzLSJra8B",
+                                                1517138645856576,
+                                                1517138645.856576
+                                            ]
+                                        ],
+                                        "rows": 100
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/tokens": {
+            "get": {
+                "summary": "List whitelisted tokens",
+                "description": "Returns a list of all whitelisted tokens across supported chains, including their contract addresses, symbols, names, and decimal places.",
+                "operationId": "listTokens",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "example": [
+                                    {
+                                        "columns": [
+                                            {
+                                                "name": "chain_id",
+                                                "type": "UInt32"
+                                            },
+                                            {
+                                                "name": "address",
+                                                "type": "FixedString(44)"
+                                            },
+                                            {
+                                                "name": "symbol",
+                                                "type": "FixedString(50)"
+                                            },
+                                            {
+                                                "name": "name",
+                                                "type": "String"
+                                            },
+                                            {
+                                                "name": "decimals",
+                                                "type": "UInt8"
+                                            }
+                                        ],
+                                        "data": [
+                                            [
+                                                8453,
+                                                "0xa450487d8c8f355611eff9553337be67261af26f",
+                                                "3c-f",
+                                                "Curve.fi Factory Plain Pool: 3c",
+                                                18
+                                            ]
+                                        ],
+                                        "rows": 1
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/{chain}/dexes": {
+            "get": {
+                "summary": "List DEXes on a chain",
+                "description": "Returns a list of all DEXes available on the specified chain, including their factory addresses and names. Currently only supports BASE chain, Solana support coming soon.",
+                "operationId": "listDexes",
+                "parameters": [
+                    {
+                        "name": "chain",
+                        "in": "path",
+                        "description": "Chain identifier (e.g., base, solana)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "enum": ["base", "solana"]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "example": [
+                                    {
+                                        "columns": [
+                                            {
+                                                "name": "address",
+                                                "type": "FixedString(44)"
+                                            },
+                                            {
+                                                "name": "name",
+                                                "type": "FixedString(20)"
+                                            }
+                                        ],
+                                        "data": [
+                                            [
+                                                "0x33128a8fc17869897dce68ed026d694621f6fdfd",
+                                                "UniswapV3"
+                                            ],
+                                            [
+                                                "0x0bfbcf9fa4f9c56b0f40a671ad40e0805a091865",
+                                                "PancakeV3"
+                                            ]
+                                        ],
+                                        "rows": 2
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/{chain}/pools/{pool}": {
+            "get": {
+                "summary": "Get pool details",
+                "description": "Returns detailed information about a specific liquidity pool, including current state (liquidity, price) and 24h metrics (volume, APR, volatility). All monetary values are in USD. For Base chain, pool address must be a valid EVM address. Currently only supports BASE, Solana support coming soon.",
+                "operationId": "getPoolDetails",
+                "parameters": [
+                    {
+                        "name": "chain",
+                        "in": "path",
+                        "description": "Chain identifier (e.g., base, solana)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "enum": ["base", "solana"]
+                        }
+                    },
+                    {
+                        "name": "pool",
+                        "in": "path",
+                        "description": "Pool address",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^0x[a-fA-F0-9]{40}$"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "example": [
+                                    {
+                                        "columns": [
+                                            {
+                                                "name": "chain_id",
+                                                "type": "UInt32"
+                                            },
+                                            {
+                                                "name": "factory_address",
+                                                "type": "FixedString(42)"
+                                            },
+                                            {
+                                                "name": "factory_name",
+                                                "type": "LowCardinality(FixedString(20))"
+                                            },
+                                            {
+                                                "name": "pool",
+                                                "type": "FixedString(42)"
+                                            },
+                                            {
+                                                "name": "created_at",
+                                                "type": "DateTime('UTC')"
+                                            },
+                                            {
+                                                "name": "token0_address",
+                                                "type": "FixedString(42)"
+                                            },
+                                            {
+                                                "name": "token0_symbol",
+                                                "type": "String"
+                                            },
+                                            {
+                                                "name": "token0_decimals",
+                                                "type": "UInt32"
+                                            },
+                                            {
+                                                "name": "token1_address",
+                                                "type": "FixedString(42)"
+                                            },
+                                            {
+                                                "name": "token1_symbol",
+                                                "type": "String"
+                                            },
+                                            {
+                                                "name": "token1_decimals",
+                                                "type": "UInt32"
+                                            },
+                                            {
+                                                "name": "fee_tier",
+                                                "type": "UInt32"
+                                            },
+                                            {
+                                                "name": "tick_spacing",
+                                                "type": "Int32"
+                                            },
+                                            {
+                                                "name": "liquidity",
+                                                "type": "Int256"
+                                            },
+                                            {
+                                                "name": "sqrtPriceX96",
+                                                "type": "UInt256"
+                                            },
+                                            {
+                                                "name": "tick",
+                                                "type": "Int32"
+                                            },
+                                            {
+                                                "name": "price",
+                                                "type": "Float64"
+                                            },
+                                            {
+                                                "name": "tvlToken0",
+                                                "type": "Float64"
+                                            },
+                                            {
+                                                "name": "tvlToken1",
+                                                "type": "Float64"
+                                            },
+                                            {
+                                                "name": "tvl",
+                                                "type": "Float64"
+                                            },
+                                            {
+                                                "name": "volume24h",
+                                                "type": "Float64"
+                                            },
+                                            {
+                                                "name": "apr24h",
+                                                "type": "Float64"
+                                            },
+                                            {
+                                                "name": "price_volatility",
+                                                "type": "Float64"
+                                            },
+                                            {
+                                                "name": "utilization24h",
+                                                "type": "Float64"
+                                            }
+                                        ],
+                                        "data": [
+                                            [
+                                                8453,
+                                                "0x33128a8fc17869897dce68ed026d694621f6fdfd",
+                                                "UniswapV3",
+                                                "0x4c36388be6f416a29c8d8eee81c771ce6be14b18",
+                                                "2023-08-02T22:06:15+00:00",
+                                                "0x4200000000000000000000000000000000000006",
+                                                "WETH",
+                                                18,
+                                                "0xd9aaec86b65d86f6a7b5b1b0c42ffa531710b6ca",
+                                                "USDbC",
+                                                6,
+                                                500,
+                                                10,
+                                                "191702327689376146",
+                                                "3132597731732003837773592",
+                                                -202775,
+                                                1.5633279437756297e-09,
+                                                122.49685386665134,
+                                                15811.769499,
+                                                207864.06192952007,
+                                                174869.15778238158,
+                                                15.353121169211786,
+                                                0.0002342612567467657,
+                                                23.669438758204837
+                                            ]
+                                        ],
+                                        "rows": 1
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/{chain}/{dex}/pools": {
+            "get": {
+                "summary": "List all pools for a specific DEX",
+                "description": "Returns a list of all liquidity pools for the specified DEX, including token pairs, fee tiers, and creation timestamps. Response includes all pools (example shows single pool for brevity). Currently only supports BASE chain, Solana support coming soon.",
+                "operationId": "listDexPools",
+                "parameters": [
+                    {
+                        "name": "chain",
+                        "in": "path",
+                        "description": "Chain identifier (e.g., base, solana)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "enum": ["base", "solana"]
+                        }
+                    },
+                    {
+                        "name": "dex",
+                        "in": "path",
+                        "description": "DEX name (e.g., UniswapV3). Use /dexes endpoint to get valid DEX names.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "example": [
+                                    {
+                                        "columns": [
+                                            {
+                                                "name": "chain_id",
+                                                "type": "UInt32"
+                                            },
+                                            {
+                                                "name": "factory_address",
+                                                "type": "FixedString(42)"
+                                            },
+                                            {
+                                                "name": "factory_name",
+                                                "type": "LowCardinality(FixedString(20))"
+                                            },
+                                            {
+                                                "name": "pool",
+                                                "type": "FixedString(42)"
+                                            },
+                                            {
+                                                "name": "created_at",
+                                                "type": "DateTime('UTC')"
+                                            },
+                                            {
+                                                "name": "token0_address",
+                                                "type": "FixedString(42)"
+                                            },
+                                            {
+                                                "name": "token0_symbol",
+                                                "type": "String"
+                                            },
+                                            {
+                                                "name": "token0_decimals",
+                                                "type": "UInt32"
+                                            },
+                                            {
+                                                "name": "token1_address",
+                                                "type": "FixedString(42)"
+                                            },
+                                            {
+                                                "name": "token1_symbol",
+                                                "type": "String"
+                                            },
+                                            {
+                                                "name": "token1_decimals",
+                                                "type": "UInt32"
+                                            },
+                                            {
+                                                "name": "fee_tier",
+                                                "type": "UInt32"
+                                            },
+                                            {
+                                                "name": "tick_spacing",
+                                                "type": "Int32"
+                                            }
+                                        ],
+                                        "data": [
+                                            [
+                                                8453,
+                                                "0x33128a8fc17869897dce68ed026d694621f6fdfd",
+                                                "UniswapV3",
+                                                "0x4c36388be6f416a29c8d8eee81c771ce6be14b18",
+                                                "2023-08-02T22:06:15+00:00",
+                                                "0x4200000000000000000000000000000000000006",
+                                                "WETH",
+                                                18,
+                                                "0xd9aaec86b65d86f6a7b5b1b0c42ffa531710b6ca",
+                                                "USDbC",
+                                                6,
+                                                500,
+                                                10
+                                            ]
+                                        ],
+                                        "rows": 1
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+} 
